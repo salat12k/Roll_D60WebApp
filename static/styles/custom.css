@@ -1,0 +1,41 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+#map {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+}
+/* Stylizacja rozwijanego menu */
+.dropdown-menu {
+    position: absolute;
+    z-index: 1000;
+    display: none;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    padding: 10px;
+}
+.dropdown-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.dropdown-menu ul li {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.dropdown-menu ul li:hover {
+    background-color: #f0f0f0;
+}
+.dropdown-menu ul li img {
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* Stylizacja ikon z cieniem */
+.icon-shadow {
+    filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.5));
+}

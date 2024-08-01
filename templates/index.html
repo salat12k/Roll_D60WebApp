@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <style>
+        #map { height: 100vh; }
+        #dropdown-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            list-style: none;
+            padding: 10px;
+        }
+        #dropdown-menu li {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        #dropdown-menu li:hover {
+            background-color: #f0f0f0;
+        }
+        .icon-shadow {
+            filter: drop-shadow(0 0 0.2rem black);
+        }
+        .marker-label {
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+        .button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .button-container button {
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .tech-fog-remove {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1000;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .scale-buttons {
+            display: none;
+        }
+        .leaflet-popup-content {
+            white-space: pre-wrap;
+        }
+        .edit-description-popup {
+            position: absolute;
+            z-index: 1001;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .user-select {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+        .user-select button {
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .user-speech-bubble {
+            display: none;
+            position: absolute;
+            bottom: 50px;
+            left: 10px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+        }
+        .user-speech-bubble img {
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .user-speech-bubble img.active {
+            border: 2px solid red;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="button-container">
+        <button id="fog-of-war-button">Mgła Wojny</button>
+        <button id="delete-fog-button">🧽</button>
+        <button id="scale-down" class="scale-buttons">-</button>
+        <button id="scale-up" class="scale-buttons">+</button>
+    </div>
+    <button id="tech-fog-remove" class="tech-fog-remove">tech_fog_remove</button>
+    <div class="user-select">
+        <button id="user-select-button">User</button>
+        <div class="user-speech-bubble" id="user-speech-bubble">
+            <img src="guest_icon.png" alt="Guest" id="guest-icon" title="Guest">
+            <img src="player_icon.png" alt="Player" id="player-icon" title="Player">
+            <img src="admin_icon.png" alt="Admin" id="admin-icon" title="Admin">
+        </div>
+    </div>
+    <ul id="dropdown-menu">
+        <li data-category="Miasto">Miasto</li>
+        <li data-category="Ważne Miejsce">Ważne Miejsce</li>
+        <li data-category="Stolica">Stolica</li>
+        <li data-category="Miejsce odpoczynku">Miejsce odpoczynku</li>
+        <li data-category="Fort">Fort</li>
+    </ul>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="/static/scripts/map.js"></script>
+</body>
+</html>
