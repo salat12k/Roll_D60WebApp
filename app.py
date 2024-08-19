@@ -22,11 +22,15 @@ class Fog(db.Model):
     lng2 = db.Column(db.Float, nullable=False)
     scale = db.Column(db.Float, nullable=False)
 
+# Add this route to serve the home page
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    return render_template('home.html')
 
-@app.route('/add_marker', methods=['POST'])
+# Update the route for your map application
+@app.route('/dndworldmap')
+def dndworldmap():
+    return render_template('index.html')
 def add_marker():
     data = request.json
     new_marker = Marker(lat=data['lat'], lng=data['lng'], category=data['category'], description=data.get('description', ''), added_by=data['added_by'])

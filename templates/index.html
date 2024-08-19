@@ -97,7 +97,31 @@
             border: 2px solid red;
         }
     </style>
+    <style>
+        #map { height: 90vh; }
+        .back-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .back-button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
+<body>
+    <a href="/" class="back-button">Go Back</a>
+    <div id="map1"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="/static/scripts/map.js"></script>
+</body>
 <body>
     <div id="map"></div>
     <div class="button-container">

@@ -1,0 +1,168 @@
+<!-- templates/home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projekt Indywidualny SS_9615</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .banner {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        .tabs {
+            overflow: hidden;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+        }
+        .tabs a {
+            float: left;
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        .tabs a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        .tabs a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .content {
+            padding: 20px;
+            text-align: center;
+        }
+        iframe {
+            width: 100%;
+            height: 80vh;
+            border: none;
+        }
+        .banner-image, .dice-image {
+            max-width: 100%;
+            height: auto;
+        }
+        .campaign-section, .profile-section {
+            text-align: left;
+            margin: 0 auto;
+            max-width: 800px;
+        }
+        .campaign-section h3, .profile-section h3 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .campaign-section p, .campaign-section ul, .profile-section p {
+            padding: 10px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            margin: 10px 0;
+        }
+        .campaign-section ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .campaign-section ul li {
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        Projekt Indywidualny SS_9615
+    </div>
+    <div class="tabs">
+        <a href="#" id="home-tab">Strona Główna</a>
+        <a href="#" id="campaign-tab">Moje Kampanie</a>
+        <a href="#" id="profile-tab">Mój Profil</a>
+        <a href="#" id="dices-tab">Kostki</a>
+        <a href="/dndworldmap" id="map-tab">Moja Mapa</a>
+    </div>
+    <div class="content" id="content">
+        <!-- Default content for the "Strona Główna" tab -->
+        <img src="/static/banner_dnd_main.png" alt="DnD Banner" class="banner-image">
+    </div>
+
+    <script>
+        document.getElementById('home-tab').onclick = function() {
+            setActiveTab('home-tab');
+            document.getElementById('content').innerHTML = '<img src="/static/banner_dnd_main.png" alt="DnD Banner" class="banner-image">';
+        };
+        document.getElementById('campaign-tab').onclick = function() {
+            setActiveTab('campaign-tab');
+            document.getElementById('content').innerHTML = `
+                <div class="campaign-section">
+                    <h3>Podgląd Kampanii</h3>
+                    <p>To jest Mockup systemu zarządzania sesjam/kampaniami DND.</p>
+
+                    <h3>Postacie</h3>
+                    <ul>
+                        <li>Character 1: Level 2 Wizard</li>
+                        <li>Character 2: Level 13 Rogue</li>
+                        <li>Character 3: Level 7 Cleric</li>
+                    </ul>
+
+                    <h3>Notes</h3>
+                    <p>
+                        <strong>Session 1:</strong> Moja drużyna została zaatakowana przez grupę goblinów
+                        <br>
+                        <strong>Session 2:</strong> Z goblinów zrobiliśmy puzzle - nie było co zbierać!
+                    </p>
+                </div>
+            `;
+        };
+        document.getElementById('profile-tab').onclick = function() {
+            setActiveTab('profile-tab');
+            document.getElementById('content').innerHTML = `
+                <div class="profile-section">
+                    <h3>Profile Configuration</h3>
+                    <p>
+                        <strong>Username:</strong> Salat12k
+                        <br>
+                        <strong>Email:</strong> salat12k@wwsi.edu.pl
+                        <br>
+                        <strong>Preferred Character:</strong> Elf Ranger
+                        <br><br>
+                        <button>Edit Profile</button>
+                        <button>Change Password</button>
+                    </p>
+                </div>
+            `;
+        };
+        document.getElementById('dices-tab').onclick = function() {
+            setActiveTab('dices-tab');
+            document.getElementById('content').innerHTML = `
+                <h2>Mock - tutaj będą skórki do kostek - a póki co moja kolekcja :) :</h2>
+                <img src="/static/dice_collection_mock.jpg" alt="Dice Collection" class="dice-image">
+            `;
+        };
+        document.getElementById('map-tab').onclick = function() {
+            setActiveTab('map-tab');
+            window.location.href = "/dndworldmap";
+        };
+
+        function setActiveTab(activeTab) {
+            var tabs = document.getElementsByClassName('tabs')[0].getElementsByTagName('a');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            document.getElementById(activeTab).classList.add('active');
+        }
+    </script>
+</body>
+</html>
