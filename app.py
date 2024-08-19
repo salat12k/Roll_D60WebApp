@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///markers.db'
@@ -11,6 +12,7 @@ class Marker(db.Model):
     lng = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255), nullable=True)
+    added_by = db.Column(db.String(50), nullable=False)
 
 class Fog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,7 +29,7 @@ def index():
 @app.route('/add_marker', methods=['POST'])
 def add_marker():
     data = request.json
-    new_marker = Marker(lat=data['lat'], lng=data['lng'], category=data['category'], description=data.get('description', ''))
+    new_marker = Marker(lat=data['lat'], lng=data['lng'], category=data['category'], description=data.get('description', ''), added_by=data['added_by'])
     db.session.add(new_marker)
     db.session.commit()
     return jsonify({"id": new_marker.id})
@@ -55,7 +57,7 @@ def update_marker_description():
 @app.route('/get_markers', methods=['GET'])
 def get_markers():
     markers = Marker.query.all()
-    return jsonify([{"id": marker.id, "lat": marker.lat, "lng": marker.lng, "category": marker.category, "description": marker.description} for marker in markers])
+    return jsonify([{"id": marker.id, "lat": marker.lat, "lng": marker.lng, "category": marker.category, "description": marker.description, "added_by": marker.added_by} for marker in markers])
 
 @app.route('/add_fog', methods=['POST'])
 def add_fog():
@@ -96,6 +98,11 @@ def delete_all_fog():
     db.session.commit()
     return jsonify({"message": "All fog data deleted"})
 
+@app.route('/delete_all_markers', methods=['POST'])
+def delete_all_markers():
+    Marker.query.delete()
+    db.session.commit()
+    return jsonify({"message": "All markers deleted"})
 
 if __name__ == '__main__':
     with app.app_context():

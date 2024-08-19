@@ -4,6 +4,11 @@ var map = L.map('map', {
 });
 var bounds = [[0, 0], [1536, 2048]];
 var image = L.imageOverlay('/static/map.jpg', bounds).addTo(map);
+var fogLayerGroup = L.layerGroup().addTo(map);
+var deleteMode = false;
+var currentFogImage = null;
+var addingFog = false;
+var userRole = 'guest'; // Default role
 
 map.fitBounds(bounds);
 
@@ -71,9 +76,7 @@ dropdownMenu.onclick = function(event) {
             iconAnchor: [15, -5]
         });
         var labelMarker = L.marker(currentLatLng, {icon: label}).addTo(map);
-        var popupContent = '<b>' + category + '</b><br>' + 
-            '<button onclick="removeMarker(' + marker._leaflet_id + ', ' + labelMarker._leaflet_id + ', ' + currentLatLng.lat + ', ' + currentLatLng.lng + ')">Usuń</button>' + 
-            '<button onclick="editMarkerDescription(' + marker._leaflet_id + ', ' + currentLatLng.lat + ', ' + currentLatLng.lng + ', \'' + category + '\', \'\')">Edytuj</button>';
+        var popupContent = generatePopupContent(marker._leaflet_id, labelMarker._leaflet_id, currentLatLng.lat, currentLatLng.lng, category, '', userRole);
         marker.bindPopup(popupContent);
 
         fetch('/add_marker', {
@@ -85,13 +88,16 @@ dropdownMenu.onclick = function(event) {
                 lat: currentLatLng.lat,
                 lng: currentLatLng.lng,
                 category: category,
-                description: ''
+                description: '',
+                added_by: userRole
             })
         }).then(response => response.json())
           .then(data => {
               console.log("Marker added to database:", data);
               marker._markerId = data.id;
               labelMarker._markerId = data.id;
+              marker._addedBy = userRole;
+              labelMarker._addedBy = userRole;
           });
     } else {
         console.log("Invalid category or icon not found.");
@@ -124,11 +130,16 @@ function removeMarker(markerId, labelMarkerId, lat, lng) {
 }
 
 function editMarkerDescription(markerId, lat, lng, category, description) {
-    var editPopup = L.popup()
-        .setLatLng([lat, lng])
-        .setContent('<textarea id="edit-description-textarea">' + (description || '') + '</textarea><br><button onclick="saveDescription(' + markerId + ', \'' + category + '\')">Save</button>')
-        .openOn(map);
-    document.getElementById('edit-description-textarea').focus();
+    var marker = map._layers[markerId];
+    if (marker._addedBy === userRole || userRole === 'admin') {
+        var editPopup = L.popup()
+            .setLatLng([lat, lng])
+            .setContent('<textarea id="edit-description-textarea">' + (description || '') + '</textarea><br><button onclick="saveDescription(' + markerId + ', \'' + category + '\')">Save</button>')
+            .openOn(map);
+        document.getElementById('edit-description-textarea').focus();
+    } else {
+        console.log("You don't have permission to edit this marker.");
+    }
 }
 
 function saveDescription(markerId, category) {
@@ -147,12 +158,16 @@ function saveDescription(markerId, category) {
           console.log("Marker description updated in database:", data);
           var marker = map._layers[markerId];
           marker.unbindPopup();
-          marker.bindPopup('<b>' + category + '</b><br>' + newDescription +
-          '<br><button onclick="removeMarker(' + markerId + ', ' + markerId + ', ' + marker.getLatLng().lat + ', ' + marker.getLatLng().lng + ')">Usuń</button>' +
-          '<button onclick="editMarkerDescription(' + markerId + ', ' + marker.getLatLng().lat + ', ' + marker.getLatLng().lng + ', \'' + category + '\', \'' + newDescription + '\')">Edytuj</button>');
+          marker.bindPopup(generatePopupContent(markerId, markerId, marker.getLatLng().lat, marker.getLatLng().lng, category, newDescription, userRole));
           marker.openPopup();
           map.closePopup();
       });
+}
+
+function generatePopupContent(markerId, labelMarkerId, lat, lng, category, description, role) {
+    var removeButton = role === 'admin' || (role === 'player' && map._layers[markerId]._addedBy === role) ? '<button onclick="removeMarker(' + markerId + ', ' + labelMarkerId + ', ' + lat + ', ' + lng + ')">Usuń</button>' : '';
+    var editButton = role !== 'guest' ? '<button onclick="editMarkerDescription(' + markerId + ', ' + lat + ', ' + lng + ', \'' + category + '\', \'' + description + '\')">Edytuj</button>' : '';
+    return '<b>' + category + '</b><br>' + description + '<br>' + removeButton + editButton;
 }
 
 window.onclick = function(event) {
@@ -174,12 +189,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     iconAnchor: [15, -5]
                 });
                 var labelMarker = L.marker(latlng, {icon: label}).addTo(map);
-                var popupContent = '<b>' + marker.category + '</b><br>' + (marker.description || '') +
-                    '<br><button onclick="removeMarker(' + mapMarker._leaflet_id + ', ' + labelMarker._leaflet_id + ', ' + marker.lat + ', ' + marker.lng + ')">Usuń</button>' +
-                    '<button onclick="editMarkerDescription(' + mapMarker._leaflet_id + ', ' + marker.lat + ', ' + marker.lng + ', \'' + marker.category + '\', \'' + (marker.description || '') + '\')">Edytuj</button>';
+                var popupContent = generatePopupContent(mapMarker._leaflet_id, labelMarker._leaflet_id, marker.lat, marker.lng, marker.category, marker.description, userRole);
                 mapMarker.bindPopup(popupContent);
                 mapMarker._markerId = marker.id;
+                mapMarker._addedBy = marker.added_by;
                 labelMarker._markerId = marker.id;
+                labelMarker._addedBy = marker.added_by;
             });
         });
 
@@ -196,13 +211,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 fogImage._fogId = fog.id;
 
                 fogImage.on('mousedown', function(e) {
-                    map.dragging.disable();
-                    map.on('mousemove', moveFogImage);
-                    map.on('mouseup', function() {
-                        map.dragging.enable();
-                        map.off('mousemove', moveFogImage);
-                        saveFogOfWar(fogImage, false, fogImage._fogId);
-                    });
+                    if (userRole === 'admin') {
+                        map.dragging.disable();
+                        map.on('mousemove', moveFogImage);
+                        map.on('mouseup', function() {
+                            map.dragging.enable();
+                            map.off('mousemove', moveFogImage);
+                            saveFogOfWar(fogImage, false, fogImage._fogId);
+                        });
+                    }
                 });
 
                 function moveFogImage(e) {
@@ -215,10 +232,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 fogImage.on('click', function() {
-                    if (deleteMode) {
+                    if (deleteMode && userRole === 'admin') {
                         fogLayerGroup.removeLayer(fogImage);
                         saveFogOfWar(fogImage, true, fogImage._fogId);
-                    } else {
+                    } else if (userRole === 'admin') {
                         currentFogImage = fogImage;
                         document.querySelectorAll('.scale-buttons').forEach(btn => btn.style.display = 'inline-block');
                     }
@@ -227,19 +244,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 });
 
-var fogLayerGroup = L.layerGroup().addTo(map);
-var deleteMode = false;
-var currentFogImage = null;
-var addingFog = false;
+
 
 document.getElementById('fog-of-war-button').onclick = function() {
-    addingFog = !addingFog;
-    this.style.borderColor = addingFog ? 'red' : '';
-    if (addingFog) {
-        map.on('click', placeFog);
-        deactivateDeleteMode();
-    } else {
-        map.off('click', placeFog);
+    if (userRole === 'admin') {
+        addingFog = !addingFog;
+        this.style.borderColor = addingFog ? 'red' : '';
+        if (addingFog) {
+            map.on('click', placeFog);
+            deactivateDeleteMode();
+        } else {
+            map.off('click', placeFog);
+        }
     }
 };
 
@@ -257,13 +273,15 @@ function placeFog(e) {
     fogImage.currentScale = 1.0;
 
     fogImage.on('mousedown', function(e) {
-        map.dragging.disable();
-        map.on('mousemove', moveFogImage);
-        map.on('mouseup', function() {
-            map.dragging.enable();
-            map.off('mousemove', moveFogImage);
-            saveFogOfWar(fogImage, false, fogImage._fogId);
-        });
+        if (userRole === 'admin') {
+            map.dragging.disable();
+            map.on('mousemove', moveFogImage);
+            map.on('mouseup', function() {
+                map.dragging.enable();
+                map.off('mousemove', moveFogImage);
+                saveFogOfWar(fogImage, false, fogImage._fogId);
+            });
+        }
     });
 
     function moveFogImage(e) {
@@ -276,10 +294,10 @@ function placeFog(e) {
     }
 
     fogImage.on('click', function() {
-        if (deleteMode) {
+        if (deleteMode && userRole === 'admin') {
             fogLayerGroup.removeLayer(fogImage);
             saveFogOfWar(fogImage, true, fogImage._fogId);
-        } else {
+        } else if (userRole === 'admin') {
             currentFogImage = fogImage;
             document.querySelectorAll('.scale-buttons').forEach(btn => btn.style.display = 'inline-block');
         }
@@ -292,23 +310,25 @@ function placeFog(e) {
 }
 
 document.getElementById('delete-fog-button').onclick = function() {
-    deleteMode = !deleteMode;
-    this.classList.toggle('active', deleteMode);
-    this.style.borderColor = deleteMode ? 'blue' : '';
-    if (deleteMode) {
-        deactivateAddFogMode();
+    if (userRole === 'admin') {
+        deleteMode = !deleteMode;
+        this.classList.toggle('active', deleteMode);
+        this.style.borderColor = deleteMode ? 'blue' : '';
+        if (deleteMode) {
+            deactivateAddFogMode();
+        }
     }
 };
 
 document.getElementById('scale-down').onclick = function() {
-    if (currentFogImage) {
+    if (currentFogImage && userRole === 'admin') {
         var scaleFactor = Math.max(currentFogImage.currentScale - 0.1, 0.5);
         scaleFogImage(currentFogImage, scaleFactor);
     }
 };
 
 document.getElementById('scale-up').onclick = function() {
-    if (currentFogImage) {
+    if (currentFogImage && userRole === 'admin') {
         var scaleFactor = Math.min(currentFogImage.currentScale + 0.1, 3.0);
         scaleFogImage(currentFogImage, scaleFactor);
     }
@@ -372,11 +392,92 @@ function deactivateDeleteMode() {
 }
 
 document.getElementById('tech-fog-remove').onclick = function() {
-    fetch('/delete_all_fog', {
-        method: 'POST'
-    }).then(response => response.json())
-      .then(data => {
-          console.log("All fog data deleted:", data);
-          fogLayerGroup.clearLayers();
-      });
+    if (userRole === 'admin') {
+        fetch('/delete_all_fog', {
+            method: 'POST'
+        }).then(response => response.json())
+          .then(data => {
+              console.log("All fog data deleted:", data);
+              fogLayerGroup.clearLayers();
+          });
+    }
 };
+
+document.getElementById('tech-marker-remove').onclick = function() {
+    if (userRole === 'admin') {
+        fetch('/delete_all_markers', {
+            method: 'POST'
+        }).then(response => response.json())
+          .then(data => {
+              console.log("All markers deleted:", data);
+              location.reload();
+          });
+    }
+};
+
+function refreshMarkers() {
+    fetch('/get_markers')
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(marker => {
+                var latlng = L.latLng(marker.lat, marker.lng);
+                var mapMarker = L.marker(latlng, {icon: icons[marker.category]}).addTo(map);
+                var label = L.divIcon({
+                    className: 'marker-label',
+                    html: marker.category,
+                    iconAnchor: [15, -5]
+                });
+                var labelMarker = L.marker(latlng, {icon: label}).addTo(map);
+                var popupContent = generatePopupContent(mapMarker._leaflet_id, labelMarker._leaflet_id, marker.lat, marker.lng, marker.category, marker.description, userRole);
+                mapMarker.bindPopup(popupContent);
+                mapMarker._markerId = marker.id;
+                mapMarker._addedBy = marker.added_by;
+                labelMarker._markerId = marker.id;
+                labelMarker._addedBy = marker.added_by;
+            });
+        });
+}
+
+function updateUIForUserRole() {
+    console.log("User role updated:", userRole);
+
+    if (userRole === 'admin') {
+        document.getElementById('fog-of-war-button').style.display = 'inline-block';
+        document.getElementById('delete-fog-button').style.display = 'inline-block';
+        document.getElementById('tech-fog-remove').style.display = 'inline-block';
+        document.getElementById('tech-marker-remove').style.display = 'inline-block';
+    } else {
+        document.getElementById('fog-of-war-button').style.display = 'none';
+        document.getElementById('delete-fog-button').style.display = 'none';
+        document.getElementById('tech-fog-remove').style.display = 'none';
+        document.getElementById('tech-marker-remove').style.display = 'none';
+    }
+
+    refreshMarkers();
+}
+
+// User role management
+document.getElementById('user-select-button').onclick = function() {
+    var bubble = document.getElementById('user-speech-bubble');
+    bubble.style.display = bubble.style.display === 'block' ? 'none' : 'block';
+};
+
+document.getElementById('guest-icon').onclick = function() {
+    userRole = 'guest';
+    updateUIForUserRole();
+    document.getElementById('user-speech-bubble').style.display = 'none';
+};
+
+document.getElementById('player-icon').onclick = function() {
+    userRole = 'player';
+    updateUIForUserRole();
+    document.getElementById('user-speech-bubble').style.display = 'none';
+};
+
+document.getElementById('admin-icon').onclick = function() {
+    userRole = 'admin';
+    updateUIForUserRole();
+    document.getElementById('user-speech-bubble').style.display = 'none';
+};
+
+updateUIForUserRole();
